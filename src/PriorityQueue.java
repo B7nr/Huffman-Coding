@@ -53,8 +53,6 @@ public class PriorityQueue <E extends Comparable<? super E>>{
         }
     }
     
-    // TODO: DON'T NEED A PEEK METHOD FOR THIS ASSIGNMENT, BUT SHOULD WE WRITE IT ANYWAYS?
-    
     // Return size of this priority queue
     // Pre: None
     // Post: Returns size of priority queue
