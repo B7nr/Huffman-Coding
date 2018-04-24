@@ -81,10 +81,19 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         System.out.println("HUFFMAN HASH MAP ENCODINGS: " + huffmanMap);
         System.out.println("BITS USED FOR COMPRESSED DATA: " + bitsInCompressedData[0]);
         
+        // Constant to represent the number of bits contained in the MAGIC_NUMBER
+        // and the bits in the Store constants (both ints)
+        final int CONSTANT_BITS = BITS_PER_INT * 2;
+        // Variable to store number of bits in the header to reproduce the tree
+        int bitsInHeaderData = 0; 
+        if(headerFormat == STORE_COUNTS) { // If header to reproduce tree is stored in Standard Count Format
+            bitsInHeaderData = ALPH_SIZE * BITS_PER_INT;
+        } else { // If header to reproduce the tree is stored in Standard Tree Format
+            
+        }
+        int compressedFileBits = CONSTANT_BITS + bitsInHeaderData + bitsInCompressedData[0];
         throw new IOException("preprocess not implemented");
-        
-        //int compressedFileBits = 
-        //return 0;
+        return compressedFileBits;
     }
     
     // Use HuffMan Tree to create a HashMap of all alphabet values and associated Huffman Encodings
