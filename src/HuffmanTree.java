@@ -53,6 +53,34 @@ public class HuffmanTree {
         return root;
     }
     
+    // Get number of bits that this Huffman Tree has in a Standard Tree Format header
+    // Pre: None
+    // Post: Returns number of bits if this Huffman Tree were to be encoded into a Standard
+    //       Tree Format
+    public int numBitsInStandardTreeFormat() {
+        int[] totalBits = new int[1];
+        numBitsInStandardTreeFormatHelper(totalBits, root);
+        return totalBits[0];
+    }
+    
+    // Recursive helper method to numBitsInStandardTreeFormat()
+    // Recursively go through the Huffman Tree and keep track total bits needed
+    // to write the Standard Tree Format header
+    // Add 1 bit every non-leaf node, and add 1 + (BITS_PER_WORD + 1)
+    // Pre: None
+    // Post: Updates value in array to show total bits in Standard Tree Format Header
+    private void numBitsInStandardTreeFormatHelper(int[] totalBits, TreeNode currentNode) {
+        if(currentNode != null) {
+            if(currentNode.getLeft() == null && currentNode.getRight() == null) { // Leaf!
+                totalBits[0] += 1 + (IHuffConstants.BITS_PER_WORD + 1); // TODO: SHOULD WE EXTEND I HUFF CONSTANTS? AND IS THIS RIGHT???
+            } else { // Not a leaf!
+                numBitsInStandardTreeFormatHelper(totalBits, currentNode.getLeft());
+                totalBits[0]++;
+                numBitsInStandardTreeFormatHelper(totalBits, currentNode.getRight());
+            }
+        }
+    }
+    
      // TODO: TESTING PURPOSES FOR HUFFMAN TREE!
     private void inOrderTraversal(TreeNode node) {
         if (node != null) {

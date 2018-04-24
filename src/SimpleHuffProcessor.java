@@ -72,7 +72,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
 //            System.out.println("CURRENT ASCII VAL: " + chunkVal + "   FREQUENCY: " + freqTable[chunkVal]);
 //        }
         HuffmanTree encodingTree = new HuffmanTree(freqTable);
-        // Mutable integer value to keep track of total bits in new compressed file
+        // Mutable integer value to keep track of total bits in new compressed file (actual data)
         int[] bitsInCompressedData = new int[1]; 
         HashMap<Integer, String> huffmanMap = 
                 getHuffmanMap(encodingTree.getHuffmanRoot(), bitsInCompressedData);
@@ -87,13 +87,30 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         // Variable to store number of bits in the header to reproduce the tree
         int bitsInHeaderData = 0; 
         if(headerFormat == STORE_COUNTS) { // If header to reproduce tree is stored in Standard Count Format
-            bitsInHeaderData = ALPH_SIZE * BITS_PER_INT;
+            bitsInHeaderData = ALPH_SIZE * BITS_PER_INT; // Array of ALPH_SIZE length and each index stores BITS_PER_INT bits
         } else { // If header to reproduce the tree is stored in Standard Tree Format
-            
+            bitsInHeaderData = encodingTree.numBitsInStandardTreeFormat();
         }
         int compressedFileBits = CONSTANT_BITS + bitsInHeaderData + bitsInCompressedData[0];
-        throw new IOException("preprocess not implemented");
-        return compressedFileBits;
+        int originalFileBits = getNumBitsOriginal(freqTable);
+        //throw new IOException("preprocess not implemented");
+        return originalFileBits - compressedFileBits;
+    }
+    
+    // Create frequency table from InputStream to use for Priority Queue
+    // Pre: None
+    // Post: Returns an array of ints that represents frequency of values in alphabet.
+    //       Array is ALPH_SIZE large. The index of the array represents the value in the
+    //      alphabet, and the value in number in the array represents that value's frequency
+    private int[] getFreqTable(InputStream in) throws IOException{
+        int[] frequencyTable = new int[IHuffConstants.ALPH_SIZE];
+        BitInputStream inputReader = new BitInputStream(in);
+        
+        int currentChunk = 0; // Gets an integer representation of the current value read
+        while((currentChunk = inputReader.readBits(BITS_PER_WORD)) != -1) {
+            frequencyTable[currentChunk]++; // Updates frequency for current alphabet value
+        }
+        return frequencyTable;
     }
     
     // Use HuffMan Tree to create a HashMap of all alphabet values and associated Huffman Encodings
@@ -128,20 +145,17 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         }
     }
     
-    // Create frequency table from InputStream to use for Priority Queue
+    // Method to get original size of file (bits)
+    // Simply total frequency * BITS_PER_WORD 
     // Pre: None
-    // Post: Returns an array of ints that represents frequency of values in alphabet.
-    //       Array is ALPH_SIZE large. The index of the array represents the value in the
-    //      alphabet, and the value in number in the array represents that value's frequency
-    private int[] getFreqTable(InputStream in) throws IOException{
-        int[] frequencyTable = new int[IHuffConstants.ALPH_SIZE];
-        BitInputStream inputReader = new BitInputStream(in);
-        
-        int currentChunk = 0; // Gets an integer representation of the current value read
-        while((currentChunk = inputReader.readBits(BITS_PER_WORD)) != -1) {
-            frequencyTable[currentChunk]++; // Updates frequency for current alphabet value
+    // Post: Return original size of file (total frequency * BITS_PER_WORD)
+    private int getNumBitsOriginal(int[] freqTable) {
+        int totalFreq = 0;
+        for(int currentFreq : freqTable) {
+            totalFreq += currentFreq;
         }
-        return frequencyTable;
+        
+        return totalFreq * BITS_PER_WORD;
     }
 
     public void setViewer(IHuffViewer viewer) {
