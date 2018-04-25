@@ -60,6 +60,7 @@ public class HuffmanTree {
     public int numBitsInStandardTreeFormat() {
         int[] totalBits = new int[1];
         numBitsInStandardTreeFormatHelper(totalBits, root);
+        System.out.println("NUM BITS IN STANDARD TREE FORMAT HEADER: " + totalBits[0]); // TODO: TEST TESTTEST!!
         return totalBits[0];
     }
     
@@ -72,7 +73,7 @@ public class HuffmanTree {
     private void numBitsInStandardTreeFormatHelper(int[] totalBits, TreeNode currentNode) {
         if(currentNode != null) {
             if(currentNode.getLeft() == null && currentNode.getRight() == null) { // Leaf!
-                totalBits[0] += 1 + (IHuffConstants.BITS_PER_WORD + 1); // TODO: SHOULD WE EXTEND I HUFF CONSTANTS? AND IS THIS RIGHT???
+                totalBits[0] += 1 + (IHuffConstants.BITS_PER_WORD + 1); 
             } else { // Not a leaf!
                 numBitsInStandardTreeFormatHelper(totalBits, currentNode.getLeft());
                 totalBits[0]++;

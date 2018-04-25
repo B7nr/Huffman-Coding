@@ -64,7 +64,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * reproduce the tree, AND the actual data.
      * @throws IOException if an error occurs while reading from the input file.
      */
-    public int preprocessCompress(InputStream in, int headerFormat) throws IOException { // TODO: WHAT IS "headerFormat" FOR IN PREPROCESS?
+    public int preprocessCompress(InputStream in, int headerFormat) throws IOException { 
         showString("Not working yet");
         myViewer.update("Still not working");
         int[] freqTable = getFreqTable(in);
@@ -78,8 +78,8 @@ public class SimpleHuffProcessor implements IHuffProcessor {
                 getHuffmanMap(encodingTree.getHuffmanRoot(), bitsInCompressedData);
         
         // TODO:TEST TEST TEST
-        System.out.println("HUFFMAN HASH MAP ENCODINGS: " + huffmanMap);
-        System.out.println("BITS USED FOR COMPRESSED DATA: " + bitsInCompressedData[0]);
+//        System.out.println("HUFFMAN HASH MAP ENCODINGS: " + huffmanMap);
+//        System.out.println("BITS USED FOR COMPRESSED DATA: " + bitsInCompressedData[0]);
         
         // Constant to represent the number of bits contained in the MAGIC_NUMBER
         // and the bits in the Store constants (both ints)
@@ -89,7 +89,8 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         if(headerFormat == STORE_COUNTS) { // If header to reproduce tree is stored in Standard Count Format
             bitsInHeaderData = ALPH_SIZE * BITS_PER_INT; // Array of ALPH_SIZE length and each index stores BITS_PER_INT bits
         } else { // If header to reproduce the tree is stored in Standard Tree Format
-            bitsInHeaderData = encodingTree.numBitsInStandardTreeFormat();
+            // Add BITS_PER_INT to end because these 32 bits is an int that reps. how many bits are used to store Standard Tree Format
+            bitsInHeaderData = encodingTree.numBitsInStandardTreeFormat() + BITS_PER_INT;
         }
         int compressedFileBits = CONSTANT_BITS + bitsInHeaderData + bitsInCompressedData[0];
         int originalFileBits = getNumBitsOriginal(freqTable);
