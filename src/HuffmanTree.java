@@ -11,9 +11,6 @@ public class HuffmanTree {
         PriorityQueue<TreeNode> priorityQueue = getInitialPriorityQueue(freqTable); // TODO:DO WE NEED TO DEAL WITH IF THE FREQUENCY IS EMPTY?? (I.E.THE FILE IS EMPTY)
         root = getHuffmanTree(priorityQueue);
         treeFormatBitSize = 0;
-        // TODO: TESTING PURPOSES!!!!
-        // System.out.println(priorityQueue);
-        // inOrderTraversal(root);
     }
     
     // Helper method to create initial priority queue with frequency table
@@ -39,7 +36,7 @@ public class HuffmanTree {
         while(priorityQueue.size() >= 2) {
             TreeNode left = priorityQueue.dequeue();
             TreeNode right = priorityQueue.dequeue();
-            TreeNode newNode = new TreeNode(left, -1, right); // -1 is arbitrary dummy value. These nodes don't hold alphabet element! // TODO: WILL DUMMY VALUE OF -1 CAUSE A BUG?
+            TreeNode newNode = new TreeNode(left, -1, right); // -1 is arbitrary dummy value. These nodes don't hold alphabet element! 
             priorityQueue.enqueue(newNode);
             
         }
@@ -62,7 +59,6 @@ public class HuffmanTree {
         int[] totalBits = new int[1];
         numBitsInStandardTreeFormatHelper(totalBits, root);
         treeFormatBitSize = totalBits[0]; // Store size 
-        System.out.println("NUM BITS IN STANDARD TREE FORMAT HEADER: " + totalBits[0]); // TODO: TEST TESTTEST!!
         return totalBits[0];
     }
     
@@ -86,13 +82,13 @@ public class HuffmanTree {
     
     // Return the number of bits required to store this tree in a Standard Tree
     // Format header
-    // Pre: // TODO: WH
+    // Pre: None
     // Post: Return number of bits needed to store tree in STF.
     public int getTreeFormatBitSize() {
         return treeFormatBitSize;
     }
     
-     // TODO: TESTING PURPOSES FOR HUFFMAN TREE!
+     // TESTING PURPOSES FOR HUFFMAN TREE!
     private void inOrderTraversal(TreeNode node) {
         if (node != null) {
             inOrderTraversal(node.getLeft());

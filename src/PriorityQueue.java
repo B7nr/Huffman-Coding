@@ -33,7 +33,7 @@ public class PriorityQueue <E extends Comparable<? super E>>{
     // present with the same priority 
     // Pre: value != null
     // Post: Enqueue value into correct spot based on priority
-    public void enqueue(E elementToAdd) { // TODO: WHAT SHOULD THIS RETURN? BOOLEAN OR VOID?
+    public void enqueue(E elementToAdd) { 
         Iterator<E> iterator = container.iterator();
         boolean isAdded = false;
         

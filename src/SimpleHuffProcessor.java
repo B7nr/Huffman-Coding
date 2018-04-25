@@ -56,8 +56,6 @@ public class SimpleHuffProcessor implements IHuffProcessor {
 //        }
         
         writeCompressedData(bitInput, bitOutput, numBitsWritten);
-        // TODO: DEBUGGING!!!
-        showString("COMPRESS FILE SIZE IN BITS: " + numBitsWritten[0]);
         out.close();
         return numBitsWritten[0];
     }
@@ -140,7 +138,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             int[] numBitsWritten) {
         for(int indexOfCode = 0; indexOfCode < encoding.length(); indexOfCode++) {
             if(encoding.charAt(indexOfCode) == '0') {
-                bitOutput.writeBits(1, 0); // Write a 0 bit for each 0 bit in the encoding // TODO:MAKE SURE THIS WORKS!
+                bitOutput.writeBits(1, 0); // Write a 0 bit for each 0 bit in the encoding 
             } else {
                 bitOutput.writeBits(1, 1); // Write a 1 bit for each 1 bit in the encoding
             }
@@ -159,8 +157,8 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * @return number of bits saved by compression or some other measure
      * Note, to determine the number of 
      * bits saved, the number of bits written includes 
-     * ALL bits that will be written including the  // TODO: IMPORTANT !!!!!
-     * magic number, the header format number, the header to  // TODO: HOW TO DEAL WITH HEADERTO REPRODUCE THE TREE???
+     * ALL bits that will be written including the  
+     * magic number, the header format number, the header to  
      * reproduce the tree, AND the actual data.
      * @throws IOException if an error occurs while reading from the input file.
      */
@@ -233,7 +231,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         if(currentNode != null) { // TODO: IS THE FILE EMPTY? DO WE NEED TO DEAL WITH THIS?
             if(currentNode.getLeft() == null && currentNode.getRight() == null) {
                 encodingMap.put(currentNode.getValue(), encoding);
-                bitsInCompressed[0] += currentNode.getFrequency() * encoding.length(); // TODO: TEST THIS TO BE CORRECT!
+                bitsInCompressed[0] += currentNode.getFrequency() * encoding.length(); 
             } else {
                 getHuffMapHelper(encodingMap, bitsInCompressed, currentNode.getLeft(), encoding + "0");
                 getHuffMapHelper(encodingMap, bitsInCompressed, currentNode.getRight(), encoding + "1");
