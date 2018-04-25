@@ -4,12 +4,13 @@ import java.util.HashMap;
 // frequencys of each value in the alphabet
 public class HuffmanTree {
     private TreeNode root;
+    private int treeFormatBitSize;
     
     // Create Huffman Tree based off frequency table
     public HuffmanTree(int[] freqTable) {
         PriorityQueue<TreeNode> priorityQueue = getInitialPriorityQueue(freqTable); // TODO:DO WE NEED TO DEAL WITH IF THE FREQUENCY IS EMPTY?? (I.E.THE FILE IS EMPTY)
         root = getHuffmanTree(priorityQueue);
-        
+        treeFormatBitSize = 0;
         // TODO: TESTING PURPOSES!!!!
         // System.out.println(priorityQueue);
         // inOrderTraversal(root);
@@ -57,9 +58,10 @@ public class HuffmanTree {
     // Pre: None
     // Post: Returns number of bits if this Huffman Tree were to be encoded into a Standard
     //       Tree Format
-    public int numBitsInStandardTreeFormat() {
+    public int calculateTreeFormatBitSize() {
         int[] totalBits = new int[1];
         numBitsInStandardTreeFormatHelper(totalBits, root);
+        treeFormatBitSize = totalBits[0]; // Store size 
         System.out.println("NUM BITS IN STANDARD TREE FORMAT HEADER: " + totalBits[0]); // TODO: TEST TESTTEST!!
         return totalBits[0];
     }
@@ -80,6 +82,14 @@ public class HuffmanTree {
                 numBitsInStandardTreeFormatHelper(totalBits, currentNode.getRight());
             }
         }
+    }
+    
+    // Return the number of bits required to store this tree in a Standard Tree
+    // Format header
+    // Pre: // TODO: WH
+    // Post: Return number of bits needed to store tree in STF.
+    public int getTreeFormatBitSize() {
+        return treeFormatBitSize;
     }
     
      // TODO: TESTING PURPOSES FOR HUFFMAN TREE!

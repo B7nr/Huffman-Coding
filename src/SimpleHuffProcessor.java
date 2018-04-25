@@ -25,6 +25,7 @@ import java.util.HashMap;
 public class SimpleHuffProcessor implements IHuffProcessor {
 
     private IHuffViewer myViewer;
+    HuffmanTree encodingTree;
     private HashMap<Integer, String> huffmanMap;// TODO: WHERE SHOULD WE STORE THE HUFFMAN MAP TO USE FOR PREPROCESS AND COMPRESS???
     private int headerFormat; // TODO: INSTANCE VARIABLE TO KNOW WHICH HEADER FORMAT WE ARE USING FOR COMPRESS?
     private int[] freqTable; // TODO: IS THIS RIGHT?
@@ -57,7 +58,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         writeCompressedData(bitInput, bitOutput, numBitsWritten);
         // TODO: DEBUGGING!!!
         showString("COMPRESS FILE SIZE IN BITS: " + numBitsWritten[0]);
-        // throw new IOException("compress is not implemented");
+        out.close();
         return numBitsWritten[0];
     }
 
@@ -72,8 +73,14 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             bitOutput.writeBits(BITS_PER_INT, STORE_COUNTS);
             writeStandardCountFormatHeader(bitOutput, numBitsWritten);
         } else { // Store constant showing file is using Standard Tree Format!
+            int numBitsInTreeFormat = encodingTree.getTreeFormatBitSize();
             bitOutput.writeBits(BITS_PER_INT, STORE_TREE);
-            // TODO: GET BACK TO THIS LATER!
+            bitOutput.writeBits(BITS_PER_INT, numBitsInTreeFormat); // Stores # of bits in tree rep. in STF
+            // These bits account for BITS_PER_INT value indicating how many bits are in tree rep.,
+            // followed by the total number of bits used to represent tree in STF
+            numBitsWritten[0] += BITS_PER_INT + numBitsInTreeFormat;
+            
+            writeStandardTreeHeader(bitOutput, encodingTree.getHuffmanRoot());
         }  
         numBitsWritten[0] += BITS_PER_INT * 2; // Includes bits for MAGIC_NUMBER and header format constant
     }
@@ -87,6 +94,24 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         for(int alphVal = 0; alphVal < ALPH_SIZE; alphVal++) {
             bitOutput.writeBits(BITS_PER_INT, freqTable[alphVal]); // Write freq. for each alphabet value!
             numBitsWritten[0] += BITS_PER_INT;
+        }
+    }
+    
+    // Recursive helper method to write Standard Tree Format header information to compressed file
+    // Pre: None
+    // Post: Writes STF info. to compressed file to recreate Huffman Tree. Store representation
+    //       of tree with internal nodes represented by a 0 bit, leaf nodes represented by a 1 bit,
+    //       and when reaching the leaf node, BITS_PER_WORD + 1 bits to rep. alphabet value
+    private void writeStandardTreeHeader(BitOutputStream bitOutput, TreeNode currentNode) {
+        if(currentNode != null) {
+            if(currentNode.getLeft() == null && currentNode.getRight() == null) { // Leaf!
+                bitOutput.writeBits(1, 1); // 1 represents a leaf!
+                bitOutput.writeBits(BITS_PER_WORD + 1, currentNode.getValue());
+            } else { // Not a leaf!
+                bitOutput.writeBits(1, 0); // Bc not at leaf, write 0 to represent internal node!
+                writeStandardTreeHeader(bitOutput, currentNode.getLeft());
+                writeStandardTreeHeader(bitOutput, currentNode.getRight());
+            }
         }
     }
     
@@ -144,7 +169,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         myViewer.update("Still not working");
         freqTable = getFreqTable(in);
         
-        HuffmanTree encodingTree = new HuffmanTree(freqTable);
+        encodingTree = new HuffmanTree(freqTable);
         this.headerFormat = headerFormat;
         
         // Mutable integer value to keep track of total bits in new compressed file (actual data)
@@ -160,7 +185,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             bitsInHeaderData = ALPH_SIZE * BITS_PER_INT; // Array of ALPH_SIZE length and each index stores BITS_PER_INT bits
         } else { // If header to reproduce the tree is stored in Standard Tree Format
             // Add BITS_PER_INT to end because these 32 bits is an int that reps. how many bits are used to store Standard Tree Format
-            bitsInHeaderData = encodingTree.numBitsInStandardTreeFormat() + BITS_PER_INT;
+            bitsInHeaderData = encodingTree.calculateTreeFormatBitSize() + BITS_PER_INT;
         }
         int compressedFileBits = CONSTANT_BITS + bitsInHeaderData + bitsInCompressedData[0];
         int originalFileBits = getNumBitsOriginal(freqTable);
