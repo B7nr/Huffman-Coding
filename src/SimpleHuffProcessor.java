@@ -258,11 +258,100 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         myViewer = viewer;
     }
 
+    /**
+     * Uncompress a previously compressed stream in, writing the
+     * uncompressed bits/data to out.
+     * @param in is the previously compressed data (not a BitInputStream) 
+     * @param out is the uncompressed file/stream
+     * @return the number of bits written to the uncompressed file/stream
+     * @throws IOException if an error occurs while reading from the input file or
+     * writing to the output file.
+     */
     public int uncompress(InputStream in, OutputStream out) throws IOException {
-        throw new IOException("uncompress not implemented");
-        //return 0;
+        BitInputStream bitInput = new BitInputStream(in);
+        BitOutputStream bitOutput = new BitOutputStream(out);
+        int magicNumber = bitInput.readBits(BITS_PER_INT);
+        if(magicNumber != MAGIC_NUMBER) {
+            myViewer.showError("Error reading compressed file. \n "
+                    + "File did not start with the huff magic number.");
+        }
+        
+        final int HEADER_FORMAT = bitInput.readBits(BITS_PER_INT); // TODO: DO WE NEED TO CONSIDER THE POSSIBILITY THAT WE ARE USING A CUSTOM HEADER FORMAT? NOT SCF OR STF
+        HuffmanTree reconstructedTree = getHuffmanTreeFromCompressed(bitInput, HEADER_FORMAT); // TODO: REUSE INSTANCE VARIABLES OR NOT?
+        int[] numBitsWritten = new int[1]; // Mutable int value to keep track of bits written
+        unCompressBodyData(bitInput, bitOutput, reconstructedTree, numBitsWritten);
+        bitOutput.close();
+        showString("NUMBER OF BITS WRITTEN WHEN UNCOMPRESSING: " + numBitsWritten[0]);
+        return numBitsWritten[0];
+    }
+    
+    // Helper method to uncompress(). Return a Huffman Tree to be used to
+    // decode compressed Huff file. Gets Huffman Tree depending on whether
+    // header was Standard Count Format or Standard Tree Format
+    // Pre: None
+    // Post: Returns the associated Huffman Tree for decoding
+    private HuffmanTree getHuffmanTreeFromCompressed(BitInputStream bitInput, 
+            int HEADER_FORMAT) throws IOException{
+        if(HEADER_FORMAT == STORE_COUNTS) { // Header stored in Standard Count Format!
+            return huffmanTreeFromStandardCount(bitInput);
+        } else { // Header stored in Standard Tree Format!
+            return huffmanTreeFormStandardTree(bitInput);
+        }   
     }
 
+    // Helper method to getHuffmanTreeFromCompressed(). Constructs and returns
+    // a Huffman Tree assuming header is stored in Standard Count Format.
+    // Pre: None
+    // Post: Returns Huffman Tree reconstructed with Standard Count Format
+    private HuffmanTree huffmanTreeFromStandardCount(BitInputStream bitInput) throws IOException {
+        int[] reconstructedFreqTable = new int[ALPH_SIZE];
+        for(int alphValue = 0; alphValue < ALPH_SIZE; alphValue++) { // For each alphabetic value, get freq.!
+            int currentFreq = bitInput.readBits(BITS_PER_INT);
+            reconstructedFreqTable[alphValue] = currentFreq;
+        }
+        
+        return new HuffmanTree(reconstructedFreqTable);
+    }
+    
+    // Helper method to getHuffmanTreeFromCompressed(). Constructs and returns
+    // a Huffman Tree assuming header is stored in Standard Tree Format.
+    // Pre: None
+    // Post: Returns Huffman Tree reconstructed with Standard Tree Format
+    private HuffmanTree huffmanTreeFromStandardTree(BitInputStream bitInput) throws IOException{
+        final int NUM_BITS_IN_TREE_HEADER = bitInput.readBits(BITS_PER_INT);
+        
+        return null;
+    }
+    
+    // Helper method for uncompress(). Use reconstructed Huffman Tree to decompress 
+    // and write to a file the original data of the file.
+    // Pre: None
+    // Post: Writes out to file original data stored by the Huffed (compressed) file
+    private void unCompressBodyData(BitInputStream bitInput, BitOutputStream bitOutput, 
+            HuffmanTree reconstructedTree, int[] numBitsWritten) throws IOException {
+        boolean done = false; // Make sure to stop at psuedo-EOF
+        TreeNode currentNode = reconstructedTree.getHuffmanRoot();
+        
+        while(!done) { // TODO: WHAT HAPPENS IF FILE HAS AN EMPTY BODY (HEADER, BUT NO DATA???)
+            int direction = bitInput.readBits(1); 
+            if(direction == 0) { // Go left in Huffman tree!
+                currentNode = currentNode.getLeft();
+            } else { // Go right in Huffman tree
+                currentNode = currentNode.getRight();
+            }
+            
+            if(currentNode.getLeft() == null && currentNode.getRight() == null) { // At a leaf!
+                if(currentNode.getValue() == PSEUDO_EOF) {
+                    done = true; //Finish file traversal when you find the leaf with EOF!
+                } else {
+                    bitOutput.writeBits(BITS_PER_WORD, currentNode.getValue()); // Write original data to new file!
+                    numBitsWritten[0] += BITS_PER_WORD;
+                    currentNode = reconstructedTree.getHuffmanRoot(); // Go back to root!
+                }
+            }
+        }
+    }
+    
     private void showString(String s){
         if(myViewer != null)
             myViewer.update(s);
