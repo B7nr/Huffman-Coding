@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.util.HashMap;
 
 // Class to store the Huffman Tree created based on the
@@ -6,8 +7,13 @@ public class HuffmanTree {
     private TreeNode root;
     private int treeFormatBitSize;
     
-    // Create Huffman Tree based off frequency table
+    // Construct to create Huffman Tree based off frequency table
+    // Pre: freqTable != null
+    // Post: Constructs Huffman Tree
     public HuffmanTree(int[] freqTable) {
+        if(freqTable == null) {
+            throw new IllegalArgumentException("Illegal argument in Huffman Tree constructor. freqTable != null.");
+        }
         PriorityQueue<TreeNode> priorityQueue = getInitialPriorityQueue(freqTable); // TODO:DO WE NEED TO DEAL WITH IF THE FREQUENCY IS EMPTY?? (I.E.THE FILE IS EMPTY)
         root = getHuffmanTree(priorityQueue);
         treeFormatBitSize = 0;
@@ -43,6 +49,45 @@ public class HuffmanTree {
         finalRoot = priorityQueue.dequeue(); // This gives you the root of the full Huffman Tree! Always will be 1 root left.
         return finalRoot;
     }
+    
+    // Constructor to create Huffman Tree using information from a Standard Tree Format header
+    // Pre: bitInput != null
+    // Post: Construct Huffman Tree using header information stored in Standard Tree Format
+    public HuffmanTree(BitInputStream bitInput, int NUM_BITS_IN_TREE_HEADER) throws IOException{
+        if(bitInput == null) {
+            throw new IllegalArgumentException("Illegal argument exception in Huffman Tree "
+                    + "constructor. bitInput != null.");
+        }
+        
+        int[] bitsToRead = {NUM_BITS_IN_TREE_HEADER};
+        bitsToRead[0]--; // Account for bit in first calL!
+        root = constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1));
+    }
+    
+    // Recursive helper method to the constructor that creates Huffman Tree from
+    // Standard Tree Format.  
+    // Pre: None
+    // Post: Create Huffman Tree using Standard Tree Format header. All nodes have a -1
+    //       as a dummy freq (frequency doesn't matter when reading from it).
+    //       All nodes have a -1 as dummy value except leaf nodes (will only ever read
+    //       values from leaf nodes)
+    private TreeNode constructTreeFromTreeHeader(BitInputStream bitInput, int[] bitsToRead, 
+            int bit) throws IOException {
+        if(bit == 1) { // We are at a leaf in the Standard Tree Format!
+            TreeNode newNode = new TreeNode(bitInput.readBits(IHuffConstants.BITS_PER_WORD + 1), -1);
+            //bitsToRead[0] -= IHuffConstants.BITS_PER_WORD + 1; // TODO: DO WE EVEN NEED THIS???
+            return newNode;
+        } else { // We are at an internal node in the Standard Tree format
+            TreeNode newNode = new TreeNode(-1, -1); // Dummy values for internal node
+            newNode.setLeft(constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1))); 
+            //bitsToRead[0]--; // TODO: 
+            newNode.setRight(constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1))); 
+            //bitsToRead[0]--;
+            
+            return newNode;
+        }
+    }
+    
     
     // Return the root of the Huffman Tree
     // Pre: None

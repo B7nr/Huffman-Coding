@@ -29,6 +29,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     private HashMap<Integer, String> huffmanMap;// TODO: WHERE SHOULD WE STORE THE HUFFMAN MAP TO USE FOR PREPROCESS AND COMPRESS???
     private int headerFormat; // TODO: INSTANCE VARIABLE TO KNOW WHICH HEADER FORMAT WE ARE USING FOR COMPRESS?
     private int[] freqTable; // TODO: IS THIS RIGHT?
+    // TODO: HANDLE FORMAT???
     /**
      * Compresses input to output, where the same InputStream has
      * previously been pre-processed via <code>preprocessCompress</code>
@@ -56,7 +57,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
 //        }
         
         writeCompressedData(bitInput, bitOutput, numBitsWritten);
-        out.close();
+        bitOutput.close();
         return numBitsWritten[0];
     }
 
@@ -276,6 +277,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         
         final int HEADER_FORMAT = bitInput.readBits(BITS_PER_INT); // TODO: DO WE NEED TO CONSIDER THE POSSIBILITY THAT WE ARE USING A CUSTOM HEADER FORMAT? NOT SCF OR STF
         HuffmanTree reconstructedTree = getHuffmanTreeFromCompressed(bitInput, HEADER_FORMAT); // TODO: REUSE INSTANCE VARIABLES OR NOT?
+        
         int[] numBitsWritten = new int[1]; // Mutable int value to keep track of bits written
         unCompressBodyData(bitInput, bitOutput, reconstructedTree, numBitsWritten);
         bitOutput.close();
@@ -289,12 +291,16 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     // Pre: None
     // Post: Returns the associated Huffman Tree for decoding
     private HuffmanTree getHuffmanTreeFromCompressed(BitInputStream bitInput, 
-            int HEADER_FORMAT) throws IOException{
+            int HEADER_FORMAT) throws IOException {
         if(HEADER_FORMAT == STORE_COUNTS) { // Header stored in Standard Count Format!
             return huffmanTreeFromStandardCount(bitInput);
-        } else { // Header stored in Standard Tree Format!
-            return huffmanTreeFormStandardTree(bitInput);
-        }   
+        } else if (HEADER_FORMAT == STORE_TREE) { // Header stored in Standard Tree Format!
+            final int NUM_BITS_IN_TREE_HEADER = bitInput.readBits(BITS_PER_INT);
+            return new HuffmanTree(bitInput, NUM_BITS_IN_TREE_HEADER);
+        } else {
+            myViewer.showError("Not using a Standard Count Format or Standard Tree Format!");
+            return null; // TODO: IS THIS RIGHT?
+        }
     }
 
     // Helper method to getHuffmanTreeFromCompressed(). Constructs and returns
@@ -309,16 +315,6 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         }
         
         return new HuffmanTree(reconstructedFreqTable);
-    }
-    
-    // Helper method to getHuffmanTreeFromCompressed(). Constructs and returns
-    // a Huffman Tree assuming header is stored in Standard Tree Format.
-    // Pre: None
-    // Post: Returns Huffman Tree reconstructed with Standard Tree Format
-    private HuffmanTree huffmanTreeFromStandardTree(BitInputStream bitInput) throws IOException{
-        final int NUM_BITS_IN_TREE_HEADER = bitInput.readBits(BITS_PER_INT);
-        
-        return null;
     }
     
     // Helper method for uncompress(). Use reconstructed Huffman Tree to decompress 
