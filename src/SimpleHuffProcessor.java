@@ -25,7 +25,7 @@ import java.util.HashMap;
 public class SimpleHuffProcessor implements IHuffProcessor {
 
     private IHuffViewer myViewer;
-    // TODO: HASHMAP INSTANCE VARIABLE?
+    private HashMap<Integer, String> huffmanMap;// TODO: WHERE SHOULD WE STORE THE HUFFMAN MAP TO USE FOR PREPROCESS AND COMPRESS???
     
     /**
      * Compresses input to output, where the same InputStream has
@@ -68,19 +68,13 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         showString("Not working yet");
         myViewer.update("Still not working");
         int[] freqTable = getFreqTable(in);
-//        for(int chunkVal = 0; chunkVal < freqTable.length; chunkVal++) { // TEST TEST TEST 
-//            System.out.println("CURRENT ASCII VAL: " + chunkVal + "   FREQUENCY: " + freqTable[chunkVal]);
-//        }
+
         HuffmanTree encodingTree = new HuffmanTree(freqTable);
+        
         // Mutable integer value to keep track of total bits in new compressed file (actual data)
         int[] bitsInCompressedData = new int[1]; 
-        HashMap<Integer, String> huffmanMap = 
-                getHuffmanMap(encodingTree.getHuffmanRoot(), bitsInCompressedData);
-        
-        // TODO:TEST TEST TEST
-//        System.out.println("HUFFMAN HASH MAP ENCODINGS: " + huffmanMap);
-//        System.out.println("BITS USED FOR COMPRESSED DATA: " + bitsInCompressedData[0]);
-        
+        huffmanMap = getHuffmanMap(encodingTree.getHuffmanRoot(), bitsInCompressedData);
+        System.out.println("HUFFMAN ENCODINGS FOR EASY FILE: " + huffmanMap);
         // Constant to represent the number of bits contained in the MAGIC_NUMBER
         // and the bits in the Store constants (both ints)
         final int CONSTANT_BITS = BITS_PER_INT * 2;
@@ -119,9 +113,9 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     // Post: Returns a HashMap with alphabet values as keys and associated Huffman encoding as values (stored in a string)
     private HashMap<Integer, String> getHuffmanMap(TreeNode huffmanRoot, 
             int[] bitsInCompressedData) { 
-        HashMap<Integer, String> huffmanMap = new HashMap<>();
-        getHuffMapHelper(huffmanMap, bitsInCompressedData, huffmanRoot, "");
-        return huffmanMap;
+        HashMap<Integer, String> encodingMap = new HashMap<>();
+        getHuffMapHelper(encodingMap, bitsInCompressedData, huffmanRoot, "");
+        return encodingMap;
     }
     
     // Helper method to getHuffmanMap(). Recursively find each leaf in this Huffman Tree.
@@ -133,15 +127,15 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     // Pre: None
     // Post: Update the HashMap with leaf values and Huffman encodings and correctly total
     //       number of bits using the new encodings
-    private void getHuffMapHelper(HashMap<Integer, String> huffmanMap, int[] bitsInCompressed, 
+    private void getHuffMapHelper(HashMap<Integer, String> encodingMap, int[] bitsInCompressed, 
             TreeNode currentNode, String encoding) {
         if(currentNode != null) { // TODO: IS THE FILE EMPTY? DO WE NEED TO DEAL WITH THIS?
             if(currentNode.getLeft() == null && currentNode.getRight() == null) {
-                huffmanMap.put(currentNode.getValue(), encoding);
+                encodingMap.put(currentNode.getValue(), encoding);
                 bitsInCompressed[0] += currentNode.getFrequency() * encoding.length(); // TODO: TEST THIS TO BE CORRECT!
             } else {
-                getHuffMapHelper(huffmanMap, bitsInCompressed, currentNode.getLeft(), encoding + "0");
-                getHuffMapHelper(huffmanMap, bitsInCompressed, currentNode.getRight(), encoding + "1");
+                getHuffMapHelper(encodingMap, bitsInCompressed, currentNode.getLeft(), encoding + "0");
+                getHuffMapHelper(encodingMap, bitsInCompressed, currentNode.getRight(), encoding + "1");
             }
         }
     }
