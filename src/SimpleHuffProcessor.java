@@ -3,7 +3,7 @@
  *  On our honor, Ryan Arifin and Ben Rehfeld, this programming assignment is our own work
  *  and we have not provided this code to any other student.
  *
- *  Number of slip days used: //TODO:
+ *  Number of slip days used: 1
  *
  *  Student 1 (Student whose turnin account is being used)
  *  UTEID: raa2954
@@ -19,17 +19,17 @@
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class SimpleHuffProcessor implements IHuffProcessor {
 
     private IHuffViewer myViewer;
-    HuffmanTree encodingTree;
-    private HashMap<Integer, String> huffmanMap;// TODO: WHERE SHOULD WE STORE THE HUFFMAN MAP TO USE FOR PREPROCESS AND COMPRESS???
-    private int headerFormat; // TODO: INSTANCE VARIABLE TO KNOW WHICH HEADER FORMAT WE ARE USING FOR COMPRESS?
-    private int[] freqTable; // TODO: IS THIS RIGHT?
-    // TODO: HANDLE FORMAT???
+    private HuffmanTree encodingTree;
+    private HashMap<Integer, String> huffmanMap;
+    private int headerFormat; 
+    private int[] freqTable; 
+    private int bitsSaved;
+   
     /**
      * Compresses input to output, where the same InputStream has
      * previously been pre-processed via <code>preprocessCompress</code>
@@ -44,21 +44,25 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * @throws IOException if an error occurs while reading from the input file or
      * writing to the output file.
      */
-    
-    public int compress(InputStream in, OutputStream out, boolean force) throws IOException { // TODO: ACCOUNT FOR FORCE BOOLEAN???
-        BitInputStream bitInput = new BitInputStream(in);
-        BitOutputStream bitOutput = new BitOutputStream(out);
+    // TODO: ALSO: FINISH WRITE UP OF EXPERIMENT IN READ-ME.TXT!!!
+    public int compress(InputStream in, OutputStream out, boolean force) throws IOException { 
+        if(!force && bitsSaved < 0) { // TODO: THROWING THE ERROR CORRECTLY, BUT FILE STILL BEING CREATED???
+            myViewer.showError("Compressed file has " + bitsSaved + " more bits than uncompressed file. "
+                    + "Select \'force compression\' option to compress.");
+            return -1; // TODO :IS THIS RIGHT???
+        } else {
         
-        int[] numBitsWritten = new int[1]; // Immutable integer value to keep track of # bits written to compressed file // TODO: SHOULD THIS BE AN INSTANCE VARIABLE? WE ARE PASSING IT AROUND IN METHODS ALOT!
-        
-        writeHeaderInfo(bitInput, bitOutput, numBitsWritten);
-//        for(int i = 0; i < freqTable.length; i++) {
-//            System.out.println("FREQUENCY OF " + i + "  " + freqTable[i] + "  ENCODING: " + huffmanMap.get(i));
-//        }
-        
-        writeCompressedData(bitInput, bitOutput, numBitsWritten);
-        bitOutput.close();
-        return numBitsWritten[0];
+            BitInputStream bitInput = new BitInputStream(in);
+            BitOutputStream bitOutput = new BitOutputStream(out);
+            
+            int[] numBitsWritten = new int[1]; // Immutable integer value to keep track of # bits written to compressed file 
+            
+            writeHeaderInfo(bitInput, bitOutput, numBitsWritten);
+            
+            writeCompressedData(bitInput, bitOutput, numBitsWritten);
+            bitOutput.close();
+            return numBitsWritten[0];
+       }
     }
 
     // Helper method to manage writing all header information to the compressed file
@@ -163,7 +167,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * reproduce the tree, AND the actual data.
      * @throws IOException if an error occurs while reading from the input file.
      */
-    public int preprocessCompress(InputStream in, int headerFormat) throws IOException { // TODO: ARE THESE TWO DIFFERENT INPUT STREAMS? IF SO, WHEN DO WE NEED TO CLOSE THIS ONE???
+    public int preprocessCompress(InputStream in, int headerFormat) throws IOException { 
         showString("Not working yet");
         myViewer.update("Still not working");
         freqTable = getFreqTable(in);
@@ -188,8 +192,9 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         }
         int compressedFileBits = CONSTANT_BITS + bitsInHeaderData + bitsInCompressedData[0];
         int originalFileBits = getNumBitsOriginal(freqTable);
-        //throw new IOException("preprocess not implemented");
-        return originalFileBits - compressedFileBits;
+        
+        bitsSaved = originalFileBits - compressedFileBits;
+        return bitsSaved;
     }
     
     // Create frequency table from InputStream to use for Priority Queue
@@ -205,6 +210,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         while((currentChunk = inputReader.readBits(BITS_PER_WORD)) != -1) {
             frequencyTable[currentChunk]++; // Updates frequency for current alphabet value
         }
+        inputReader.close();
         return frequencyTable;
     }
     
@@ -229,7 +235,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     //       number of bits using the new encodings
     private void getHuffMapHelper(HashMap<Integer, String> encodingMap, int[] bitsInCompressed, 
             TreeNode currentNode, String encoding) {
-        if(currentNode != null) { // TODO: IS THE FILE EMPTY? DO WE NEED TO DEAL WITH THIS?
+        if(currentNode != null) { 
             if(currentNode.getLeft() == null && currentNode.getRight() == null) {
                 encodingMap.put(currentNode.getValue(), encoding);
                 bitsInCompressed[0] += currentNode.getFrequency() * encoding.length(); 
@@ -271,12 +277,18 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         BitOutputStream bitOutput = new BitOutputStream(out);
         int magicNumber = bitInput.readBits(BITS_PER_INT);
         if(magicNumber != MAGIC_NUMBER) {
-            myViewer.showError("Error reading compressed file. \n "
-                    + "File did not start with the huff magic number.");
+//            myViewer.showError("Error reading compressed file. \n "
+//                    + "File did not start with the huff magic number.");
+            bitInput.close();
+            bitOutput.close();
+            throw new IOException ("Error reading compressed file. \n "
+                    + "File did not start with the huff magic number."); 
         }
         
-        final int HEADER_FORMAT = bitInput.readBits(BITS_PER_INT); // TODO: DO WE NEED TO CONSIDER THE POSSIBILITY THAT WE ARE USING A CUSTOM HEADER FORMAT? NOT SCF OR STF
-        HuffmanTree reconstructedTree = getHuffmanTreeFromCompressed(bitInput, HEADER_FORMAT); // TODO: REUSE INSTANCE VARIABLES OR NOT?
+        final int HEADER_FORMAT = bitInput.readBits(BITS_PER_INT); 
+        checkValidUncompression(HEADER_FORMAT, "No HEADER constant!"); 
+        
+        HuffmanTree reconstructedTree = getHuffmanTreeFromCompressed(bitInput, HEADER_FORMAT);
         
         int[] numBitsWritten = new int[1]; // Mutable int value to keep track of bits written
         unCompressBodyData(bitInput, bitOutput, reconstructedTree, numBitsWritten);
@@ -296,6 +308,8 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             return huffmanTreeFromStandardCount(bitInput);
         } else if (HEADER_FORMAT == STORE_TREE) { // Header stored in Standard Tree Format!
             final int NUM_BITS_IN_TREE_HEADER = bitInput.readBits(BITS_PER_INT);
+            checkValidUncompression(NUM_BITS_IN_TREE_HEADER, "Standard Tree Format in header not "
+                    + "formed correctly."); // Check if ran out of bits when reading Standard Tree Format!
             return new HuffmanTree(bitInput, NUM_BITS_IN_TREE_HEADER);
         } else {
             myViewer.showError("Not using a Standard Count Format or Standard Tree Format!");
@@ -309,11 +323,13 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     // Post: Returns Huffman Tree reconstructed with Standard Count Format
     private HuffmanTree huffmanTreeFromStandardCount(BitInputStream bitInput) throws IOException {
         int[] reconstructedFreqTable = new int[ALPH_SIZE];
+
         for(int alphValue = 0; alphValue < ALPH_SIZE; alphValue++) { // For each alphabetic value, get freq.!
             int currentFreq = bitInput.readBits(BITS_PER_INT);
+            // Check if you ran out of bits when reading Standard Count Format Header!
+            checkValidUncompression(currentFreq, "Standard Count Header not formed correctly."); 
             reconstructedFreqTable[alphValue] = currentFreq;
         }
-        
         return new HuffmanTree(reconstructedFreqTable);
     }
     
@@ -326,14 +342,15 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         boolean done = false; // Make sure to stop at psuedo-EOF
         TreeNode currentNode = reconstructedTree.getHuffmanRoot();
         
-        while(!done) { // TODO: WHAT HAPPENS IF FILE HAS AN EMPTY BODY (HEADER, BUT NO DATA???)
+        while(!done) { 
             int direction = bitInput.readBits(1); 
+            checkValidUncompression(direction, "No PSUEDO_EOF value."); // Check if you ran out of bits when reading body data!
+            
             if(direction == 0) { // Go left in Huffman tree!
                 currentNode = currentNode.getLeft();
             } else { // Go right in Huffman tree
                 currentNode = currentNode.getRight();
             }
-            
             if(currentNode.getLeft() == null && currentNode.getRight() == null) { // At a leaf!
                 if(currentNode.getValue() == PSEUDO_EOF) {
                     done = true; //Finish file traversal when you find the leaf with EOF!
@@ -343,6 +360,18 @@ public class SimpleHuffProcessor implements IHuffProcessor {
                     currentNode = reconstructedTree.getHuffmanRoot(); // Go back to root!
                 }
             }
+        }
+    }
+    
+    // Helper method for uncompress() and uncompress() helper methods. Takes in an integer
+    // to make sure file is well formed. If integer passed in is -1, we have run out of bits to
+    // read in the data, and file is NOT well formed. Display an error!
+    // Pre: None
+    // Post: Display an error if int passed in is -1 (file not well formed)
+    private void checkValidUncompression(int check, String error) throws IOException {
+        if(check == -1) { // Tried to read from input but no more bits left!
+            throw new IOException("Error reading compressed file. \n "
+                    + "unexpected end of input. " + error);
         }
     }
     

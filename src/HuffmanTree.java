@@ -14,7 +14,7 @@ public class HuffmanTree {
         if(freqTable == null) {
             throw new IllegalArgumentException("Illegal argument in Huffman Tree constructor. freqTable != null.");
         }
-        PriorityQueue<TreeNode> priorityQueue = getInitialPriorityQueue(freqTable); // TODO:DO WE NEED TO DEAL WITH IF THE FREQUENCY IS EMPTY?? (I.E.THE FILE IS EMPTY)
+        PriorityQueue<TreeNode> priorityQueue = getInitialPriorityQueue(freqTable); 
         root = getHuffmanTree(priorityQueue);
         treeFormatBitSize = 0;
     }
@@ -73,25 +73,31 @@ public class HuffmanTree {
     //       values from leaf nodes)
     private TreeNode constructTreeFromTreeHeader(BitInputStream bitInput, int[] bitsToRead, 
             int bit) throws IOException {
-        if(bit == 1) { // We are at a leaf in the Standard Tree Format!
-            TreeNode newNode = new TreeNode(bitInput.readBits(IHuffConstants.BITS_PER_WORD + 1), -1);
-            //bitsToRead[0] -= IHuffConstants.BITS_PER_WORD + 1; // TODO: DO WE EVEN NEED THIS???
-            return newNode;
-        } else { // We are at an internal node in the Standard Tree format
-            TreeNode newNode = new TreeNode(-1, -1); // Dummy values for internal node
-            newNode.setLeft(constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1))); 
-            //bitsToRead[0]--; // TODO: 
-            newNode.setRight(constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1))); 
-            //bitsToRead[0]--;
-            
-            return newNode;
-        }
+        // If non-well formed file is found and cuts off in middle of header, throws error!
+        if(bit == -1) {
+            throw new IOException("Error reading compressed file. \n "
+                + "unexpected end of input. Standard Tree Header not formatted correctly.");
+        } else {
+            if(bit == 1) { // We are at a leaf in the Standard Tree Format!
+                TreeNode newNode = new TreeNode(bitInput.readBits(IHuffConstants.BITS_PER_WORD + 1), -1);
+                //bitsToRead[0] -= IHuffConstants.BITS_PER_WORD + 1; // TODO: DO WE EVEN NEED THIS???
+                return newNode;
+            } else { // We are at an internal node in the Standard Tree format
+                TreeNode newNode = new TreeNode(-1, -1); // Dummy values for internal node
+                newNode.setLeft(constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1))); 
+                //bitsToRead[0]--; // TODO: WILL THIS WORK???
+                newNode.setRight(constructTreeFromTreeHeader(bitInput, bitsToRead, bitInput.readBits(1))); 
+                //bitsToRead[0]--;
+                
+                return newNode;
+            }
+       }
     }
     
     
     // Return the root of the Huffman Tree
     // Pre: None
-    // Post: Return root of Huffman Tree. If tree is empty, return null // TODO: WILL THE HUFFMAN TREE EVER BE EMPTY IN TEST CASES?
+    // Post: Return root of Huffman Tree
     public TreeNode getHuffmanRoot() {
         return root;
     }
